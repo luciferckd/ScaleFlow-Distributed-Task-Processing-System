@@ -1,0 +1,44 @@
+services:
+  redis:
+    image: redis:7-alpine
+    container_name: scaleflow-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+
+  api:
+    build:
+      context: ./api_gateway
+      dockerfile: Dockerfile
+    container_name: scaleflow-api
+    ports:
+      - "5000:5000"
+    env_file:
+      - ./api_gateway/.env
+    environment:
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      DB_HOST: host.docker.internal
+    depends_on:
+      - redis
+    restart: unless-stopped
+
+  worker:
+    build:
+      context: ./api_gateway/worker
+      dockerfile: Dockerfile
+    env_file:
+      - ./api_gateway/worker/.env
+    environment:
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      DB_HOST: host.docker.internal
+      CRASH_TEST: "false"
+    depends_on:
+      - redis
+    restart: unless-stopped
+
+volumes:
+  redis_data:
