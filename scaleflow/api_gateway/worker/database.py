@@ -344,3 +344,64 @@ def update_retry_status_with_outbox(
         if cursor:
             cursor.close()
         connection.close()
+
+
+def get_expired_processing_tasks():
+    """
+    Fetch tasks that are stuck in PROCESSING status whose lease has expired.
+    Used by periodic recovery to identify orphaned tasks from crashed workers.
+    """
+    connection = get_db_connection()
+    cursor = None
+
+    try:
+        cursor = connection.cursor(dictionary=True)
+
+        cursor.execute(
+            """
+            SELECT id, user_id, title, payload, status,
+                   retry_count, max_retries, locked_by, lease_expires_at
+            FROM tasks
+            WHERE status = 'PROCESSING'
+              AND lease_expires_at < NOW()
+            """
+        )
+
+        return cursor.fetchall()
+
+    finally:
+        if cursor:
+            cursor.close()
+        connection.close()
+
+
+def reset_expired_task(task_id):
+    """
+    Reset an orphaned PROCESSING task whose lease expired back to PENDING.
+    """
+    connection = get_db_connection()
+    cursor = None
+
+    try:
+        cursor = connection.cursor()
+
+        cursor.execute(
+            """
+            UPDATE tasks
+            SET status = 'PENDING',
+                locked_by = NULL,
+                lease_expires_at = NULL
+            WHERE id = %s
+              AND status = 'PROCESSING'
+              AND lease_expires_at < NOW()
+            """,
+            (task_id,)
+        )
+
+        connection.commit()
+        return cursor.rowcount == 1
+
+    finally:
+        if cursor:
+            cursor.close()
+        connection.close()
