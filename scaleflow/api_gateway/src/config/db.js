@@ -12,8 +12,6 @@ const pool = mysql.createPool({
   queueLimit: 0,
   // Database connection timeout handling
   connectTimeout: Number(process.env.DB_CONNECT_TIMEOUT) || 5000, // 5s connection timeout
-  acquireTimeout: Number(process.env.DB_ACQUIRE_TIMEOUT) || 5000, // 5s pool acquisition timeout
-  timeout: Number(process.env.DB_QUERY_TIMEOUT) || 10000,         // 10s query execution timeout
   enableKeepAlive: true,                                         // TCP keep-alive to prevent dropped connections
   keepAliveInitialDelay: 10000,                                  // Initial keep-alive delay (10s)
   idleTimeout: 30000,                                            // Close idle connections after 30s
