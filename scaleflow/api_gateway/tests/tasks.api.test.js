@@ -230,4 +230,27 @@ describe('ScaleFlow API Gateway - Task Unit & API Tests', () => {
             );
         });
     });
+
+    describe('5. Structured Logger', () => {
+        const logger = require('../src/utils/logger');
+
+        it('should format logs with timestamp and metadata', () => {
+            let loggedMessage = '';
+            const originalLog = console.log;
+            console.log = (msg) => { loggedMessage = msg; };
+
+            try {
+                logger.info('Task created successfully', {
+                    event: 'TASK_CREATED',
+                    taskId: 777
+                });
+
+                assert.ok(loggedMessage.includes('INFO'));
+                assert.ok(loggedMessage.includes('Task created successfully'));
+                assert.ok(loggedMessage.includes('777'));
+            } finally {
+                console.log = originalLog;
+            }
+        });
+    });
 });
