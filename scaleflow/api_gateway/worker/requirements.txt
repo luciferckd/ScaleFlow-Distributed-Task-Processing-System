@@ -1,4 +1,5 @@
 redis
 python-dotenv
 mysql-connector-python
+pytest
 
