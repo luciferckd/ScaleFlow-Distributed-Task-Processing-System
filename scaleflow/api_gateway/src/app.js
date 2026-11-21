@@ -23,21 +23,23 @@ app.use(
 // Centralized Error Handling
 app.use(errorHandler);
 
-// start server only after redis connects
+// Start server if run directly (e.g. node src/app.js)
 async function startServer() {
     try {
-        await connectRedis()
-        const PORT = process.env.PORT || 3000;
+        await connectRedis();
+        const PORT = process.env.PORT || 5000;
 
         app.listen(PORT, () => {
-            console.log(`server is running on port http://localhost:${PORT}`);
-        })
+            console.log(`ScaleFlow API running on port http://localhost:${PORT}`);
+        });
     } catch (error) {
-        console.error(`redis conn error:`, error);
+        console.error(`Redis connection error:`, error);
         process.exit(1);
     }
 }
 
-startServer();
+if (require.main === module) {
+    startServer();
+}
 
 module.exports = app;
