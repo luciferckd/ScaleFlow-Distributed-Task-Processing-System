@@ -411,7 +411,7 @@ def publish_single_outbox_event(connection=None, cursor=None, crash_simulation=N
         # Inject outbox_id into payload
         payload["outbox_id"] = str(event["id"])
 
-        if event["event_type"] == "RETRY":
+        if event["event_type"] in ("RETRY", "TASK_CREATED", "NEW_TASK"):
             target_stream = STREAM_NAME
         elif event["event_type"] == "DEAD_LETTER":
             target_stream = DEAD_LETTER_STREAM

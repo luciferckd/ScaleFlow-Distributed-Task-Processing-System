@@ -9,23 +9,31 @@ const cacheService = require("./cache.services");
 
 class TaskService {
 
-    // Create Task
+    // Create Task with Transactional Outbox
     async createTask(data) {
+        const { taskId, outboxId } = await taskRepository.createWithOutbox(data);
 
-        const taskId = await taskRepository.create(data);
-
-        const messageId = await queueService.addTask(taskId)
-
-        await cacheService.delete("tasks:all")
+        let messageId = null;
+        try {
+            // Attempt immediate idempotent publish using outbox_id
+            messageId = await queueService.addTask(taskId, outboxId);
+            await taskRepository.markOutboxPublished(outboxId);
+        } catch (error) {
+            console.warn(
+                `Direct Redis publish failed for task ${taskId} (outbox ${outboxId}). Background publisher will deliver it:`,
+                error.message
+            );
+        }
 
         // Invalidate task list cache
         await cacheService.delete("tasks:all");
 
         return {
             taskId,
+            outboxId,
             status: "PENDING",
             queueMessageId: messageId,
-            message: "Task added to processing queue"
+            message: "Task created and queued for processing"
         };
     }
 
