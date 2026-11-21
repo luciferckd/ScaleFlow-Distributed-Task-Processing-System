@@ -1,10 +1,16 @@
-import redis
 import os
+import sys
 import socket
 import time
 import threading
 import json
 
+# Ensure worker directory is in sys.path for local module resolution
+_worker_dir = os.path.dirname(os.path.abspath(__file__))
+if _worker_dir not in sys.path:
+    sys.path.insert(0, _worker_dir)
+
+import redis
 from redis_client import redis_client, connect_redis
 from database import (
     get_db_connection,

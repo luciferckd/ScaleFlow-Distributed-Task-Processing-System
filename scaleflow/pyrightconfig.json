@@ -1,6 +1,8 @@
 {
   "extraPaths": [
-    "api_gateway/worker"
+    "api_gateway/worker",
+    "tests",
+    "."
   ],
   "pythonVersion": "3.13",
   "venvPath": "api_gateway/worker",

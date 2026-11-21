@@ -1,0 +1,10 @@
+{
+  "extraPaths": [
+    "scaleflow/api_gateway/worker",
+    "scaleflow",
+    "scaleflow/tests"
+  ],
+  "pythonVersion": "3.13",
+  "venvPath": "scaleflow/api_gateway/worker",
+  "venv": "venv"
+}

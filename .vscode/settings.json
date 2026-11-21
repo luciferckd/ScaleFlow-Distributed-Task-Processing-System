@@ -1,0 +1,13 @@
+{
+  "python.defaultInterpreterPath": "${workspaceFolder}/scaleflow/api_gateway/worker/venv/Scripts/python.exe",
+  "python.analysis.extraPaths": [
+    "${workspaceFolder}/scaleflow/api_gateway/worker",
+    "${workspaceFolder}/scaleflow",
+    "${workspaceFolder}/scaleflow/tests"
+  ],
+  "python.autoComplete.extraPaths": [
+    "${workspaceFolder}/scaleflow/api_gateway/worker",
+    "${workspaceFolder}/scaleflow",
+    "${workspaceFolder}/scaleflow/tests"
+  ]
+}

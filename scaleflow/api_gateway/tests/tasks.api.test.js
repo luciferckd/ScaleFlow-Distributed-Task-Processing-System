@@ -1,5 +1,6 @@
-const { describe, it, beforeEach, mock } = require('node:test');
+const { describe, it, after, beforeEach, mock } = require('node:test');
 const assert = require('node:assert');
+const pool = require('../src/config/db');
 
 // Test Suite for TaskService, TaskController & API Endpoints
 const taskService = require('../src/services/tasks.services');
@@ -9,6 +10,11 @@ const cacheService = require('../src/services/cache.services');
 const taskController = require('../src/controllers/task.controller');
 
 describe('ScaleFlow API Gateway - Task Unit & API Tests', () => {
+    after(async () => {
+        try {
+            await pool.end();
+        } catch (_) {}
+    });
 
     describe('1. Task Creation Validation (Controller)', () => {
         it('should return 400 when required fields are missing', async () => {

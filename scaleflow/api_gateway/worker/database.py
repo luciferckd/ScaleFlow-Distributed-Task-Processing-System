@@ -1,28 +1,96 @@
 
 import os
+import sys
 import json
+import time
+
+# Ensure worker directory is in sys.path for local module resolution
+_worker_dir = os.path.dirname(os.path.abspath(__file__))
+if _worker_dir not in sys.path:
+    sys.path.insert(0, _worker_dir)
+
 import mysql.connector
+from mysql.connector import pooling
 from dotenv import load_dotenv
+from logger import logger
 
 load_dotenv()
 
+_connection_pool = None
 
-def get_db_connection():
-    try:
-        connection = mysql.connector.connect(
-            host=os.getenv("DB_HOST", "localhost"),
-            user=os.getenv("DB_USER", "root"),
-            password=os.getenv("DB_PASSWORD"),
-            database=os.getenv("DB_NAME"),
-            port=int(os.getenv("DB_PORT", 3306))
-        )
 
-        print("MySQL Connected Successfully")
-        return connection
+def get_db_config():
+    return {
+        "host": os.getenv("DB_HOST", "localhost"),
+        "user": os.getenv("DB_USER", "root"),
+        "password": os.getenv("DB_PASSWORD", ""),
+        "database": os.getenv("DB_NAME", "scaleflow"),
+        "port": int(os.getenv("DB_PORT", "3306")),
+        "connection_timeout": int(os.getenv("DB_CONNECT_TIMEOUT", "5")),
+    }
 
-    except mysql.connector.Error as error:
-        print(f"MySQL Connection Failed: {error}")
-        raise
+
+def get_connection_pool():
+    global _connection_pool
+    if _connection_pool is None:
+        try:
+            config = get_db_config()
+            pool_size = int(os.getenv("DB_POOL_SIZE", "5"))
+            _connection_pool = pooling.MySQLConnectionPool(
+                pool_name="scaleflow_worker_pool",
+                pool_size=pool_size,
+                **config
+            )
+            logger.info("Initialized MySQL connection pool", extra={"event": "DB_POOL_INIT"})
+        except Exception as e:
+            logger.warning(
+                f"MySQL connection pool creation skipped/failed: {e}. Falling back to direct connections.",
+                extra={"event": "DB_POOL_FALLBACK", "error": str(e)}
+            )
+            _connection_pool = None
+    return _connection_pool
+
+
+def get_db_connection(max_retries=3, retry_delay=0.1):
+    """
+    Acquires a database connection with timeout handling and retry backoff.
+    Attempts pool acquisition first, falling back to direct connection with connection_timeout.
+    """
+    last_error = None
+    max_retries = int(os.getenv("DB_MAX_RETRIES", max_retries))
+    config = get_db_config()
+
+    for attempt in range(1, max_retries + 1):
+        try:
+            pool = get_connection_pool()
+            if pool:
+                try:
+                    conn = pool.get_connection()
+                    return conn
+                except Exception as pool_err:
+                    logger.warning(
+                        f"Pool connection failed: {pool_err}. Falling back to direct connection.",
+                        extra={"event": "DB_POOL_GET_FAILED", "error": str(pool_err)}
+                    )
+
+            # Direct connection with connection_timeout
+            connection = mysql.connector.connect(**config)
+            return connection
+
+        except (mysql.connector.Error, Exception) as error:
+            last_error = error
+            logger.warning(
+                f"MySQL connection attempt {attempt}/{max_retries} failed: {error}",
+                extra={"event": "DB_CONNECT_RETRY", "retry_count": attempt, "error": str(error)}
+            )
+            if attempt < max_retries:
+                time.sleep(retry_delay * attempt)
+
+    logger.error(
+        f"MySQL Connection Failed after {max_retries} attempts: {last_error}",
+        extra={"event": "DB_CONNECT_FAILED", "error": str(last_error)}
+    )
+    raise last_error
 
 
 def get_task_details(task_id):
