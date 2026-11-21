@@ -1,6 +1,9 @@
 node_modules
-worker/venv
-worker/__pycache__
+worker
 .env
-worker/.env
+.env.*
+tests
 .git
+npm-debug.log*
+*.log
+.vscode
