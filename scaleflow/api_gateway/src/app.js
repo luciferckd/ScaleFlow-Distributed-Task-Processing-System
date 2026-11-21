@@ -7,9 +7,12 @@ const { connectRedis } = require('./config/redis');
 
 const app = express();
 
+// Security: Disable Express fingerprinting header
+app.disable('x-powered-by');
 
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+// Security: Limit request body sizes to prevent payload exhaustion / DoS
+app.use(express.json({ limit: '1mb' }));
+app.use(express.urlencoded({ extended: true, limit: '1mb' }));
 
 // Health / Base Routes
 app.use('/', routes);

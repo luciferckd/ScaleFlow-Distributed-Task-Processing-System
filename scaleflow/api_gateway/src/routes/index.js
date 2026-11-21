@@ -17,7 +17,7 @@ router.get(['/health', '/health/ready'], async (req, res) => {
     } catch (error) {
         res.status(503).json({
             status: 'DOWN',
-            error: error.message
+            error: process.env.NODE_ENV === 'production' ? 'Service dependency unavailable' : error.message
         });
     }
 });
@@ -29,7 +29,7 @@ router.get(['/metrics', '/monitoring'], async (req, res) => {
         res.status(200).json(metrics);
     } catch (error) {
         res.status(500).json({
-            error: error.message
+            error: process.env.NODE_ENV === 'production' ? 'Internal server error retrieving metrics' : error.message
         });
     }
 });
