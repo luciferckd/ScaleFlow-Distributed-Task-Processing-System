@@ -4,9 +4,12 @@ import sys
 import os
 import json
 
-# Add worker directory to sys.path so we can import worker modules
-worker_dir = os.path.abspath(
-    os.path.join(os.path.dirname(__file__), "..", "..", "api_gateway", "worker")
+# Resolve the worker directory relative to THIS file's location.
+# os.path.dirname(__file__) can be empty when run via `python -m unittest`
+# from a different cwd, so we resolve it to an absolute path first.
+_this_dir = os.path.dirname(os.path.abspath(__file__))
+worker_dir = os.path.normpath(
+    os.path.join(_this_dir, "..", "..", "api_gateway", "worker")
 )
 if worker_dir not in sys.path:
     sys.path.insert(0, worker_dir)

@@ -3,8 +3,9 @@ from unittest.mock import MagicMock, patch, call
 import sys
 import os
 
-worker_dir = os.path.abspath(
-    os.path.join(os.path.dirname(__file__), "..", "..", "api_gateway", "worker")
+_this_dir = os.path.dirname(os.path.abspath(__file__))
+worker_dir = os.path.normpath(
+    os.path.join(_this_dir, "..", "..", "api_gateway", "worker")
 )
 if worker_dir not in sys.path:
     sys.path.insert(0, worker_dir)
