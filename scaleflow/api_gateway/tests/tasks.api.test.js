@@ -253,4 +253,38 @@ describe('ScaleFlow API Gateway - Task Unit & API Tests', () => {
             }
         });
     });
+
+    describe('6. Health Checks & Monitoring Service', () => {
+        const healthService = require('../src/services/health.services');
+        const pool = require('../src/config/db');
+        const { redisClient } = require('../src/config/redis');
+
+        it('should return UP for liveness check', () => {
+            const liveness = healthService.getLiveness();
+            assert.strictEqual(liveness.status, 'UP');
+            assert.strictEqual(liveness.service, 'scaleflow-api');
+            assert.ok(typeof liveness.uptimeSeconds === 'number');
+        });
+
+        it('should return UP readiness when MySQL and Redis are healthy', async () => {
+            mock.method(pool, 'query', async () => [[{ 1: 1 }]]);
+            mock.method(redisClient, 'ping', async () => 'PONG');
+
+            const readiness = await healthService.getReadiness();
+            assert.strictEqual(readiness.status, 'UP');
+            assert.strictEqual(readiness.components.database.status, 'UP');
+            assert.strictEqual(readiness.components.redis.status, 'UP');
+        });
+
+        it('should return DOWN readiness when database fails', async () => {
+            mock.method(pool, 'query', async () => {
+                throw new Error('Database connection failed');
+            });
+            mock.method(redisClient, 'ping', async () => 'PONG');
+
+            const readiness = await healthService.getReadiness();
+            assert.strictEqual(readiness.status, 'DOWN');
+            assert.strictEqual(readiness.components.database.status, 'DOWN');
+        });
+    });
 });
